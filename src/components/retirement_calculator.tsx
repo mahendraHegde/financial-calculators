@@ -29,6 +29,9 @@ const RetirementCalculator = () => {
   const [currentAge, setCurrentAge] = useState<number>(
     initialConfig.currentAge
   );
+  const [retirementAge, setRetirementAge] = useState<number>(
+    initialConfig.retirementAge || 60
+  );
   const [inflation, setInflation] = useState<number>(initialConfig.inflation);
   const [monthlyExpenses, setMonthlyExpenses] = useState<number>(
     initialConfig.monthlyExpenses
@@ -42,6 +45,11 @@ const RetirementCalculator = () => {
     InvestmentBucket[]
   >(initialConfig.investmentBuckets);
 
+  // Monthly savings buckets
+  const [monthlySavingsBuckets, setMonthlySavingsBuckets] = useState<
+    InvestmentBucket[]
+  >(initialConfig.monthlySavingsBuckets || []);
+
   // One-time expenses
   const [oneTimeExpenses, setOneTimeExpenses] = useState<OneTimeExpense[]>(
     initialConfig.oneTimeExpenses
@@ -49,6 +57,9 @@ const RetirementCalculator = () => {
 
   const [nextBucketId, setNextBucketId] = useState<number>(
     initialConfig.nextBucketId
+  );
+  const [nextSavingsBucketId, setNextSavingsBucketId] = useState<number>(
+    initialConfig.nextSavingsBucketId || 1
   );
   const [nextExpenseId, setNextExpenseId] = useState<number>(
     initialConfig.nextExpenseId
@@ -61,12 +72,15 @@ const RetirementCalculator = () => {
   const handleSave = () => {
     saveRetirementConfig({
       currentAge,
+      retirementAge,
       inflation,
       monthlyExpenses,
       expenseType,
       investmentBuckets,
+      monthlySavingsBuckets,
       oneTimeExpenses,
       nextBucketId,
+      nextSavingsBucketId,
       nextExpenseId,
     });
     setSaveStatus("saved");
@@ -88,6 +102,38 @@ const RetirementCalculator = () => {
       )}
     </div>
   );
+
+  // Functions to manage monthly savings buckets
+  const addMonthlySavingsBucket = () => {
+    setMonthlySavingsBuckets((prev) => [
+      ...prev,
+      {
+        id: nextSavingsBucketId,
+        name: "New Savings",
+        amount: 0,
+        return: 0,
+      },
+    ]);
+    setNextSavingsBucketId((prev) => prev + 1);
+  };
+
+  const updateMonthlySavingsBucket = (
+    id: number,
+    field: keyof InvestmentBucket,
+    value: string | number
+  ) => {
+    setMonthlySavingsBuckets((buckets) =>
+      buckets.map((bucket) =>
+        bucket.id === id ? { ...bucket, [field]: value } : bucket
+      )
+    );
+  };
+
+  const removeMonthlySavingsBucket = (id: number) => {
+    setMonthlySavingsBuckets((buckets) =>
+      buckets.filter((bucket) => bucket.id !== id)
+    );
+  };
 
   // Functions to manage investment buckets
   const addInvestmentBucket = () => {
@@ -158,18 +204,22 @@ const RetirementCalculator = () => {
     () =>
       calculateRetirement({
         currentAge,
+        retirementAge,
         inflation,
         monthlyExpenses,
         expenseType,
         investmentBuckets,
+        monthlySavingsBuckets,
         oneTimeExpenses,
       }),
     [
       currentAge,
+      retirementAge,
       inflation,
       monthlyExpenses,
       expenseType,
       investmentBuckets,
+      monthlySavingsBuckets,
       oneTimeExpenses,
     ]
   );
@@ -188,7 +238,7 @@ const RetirementCalculator = () => {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
           <Calculator className="text-blue-600" />
-          Retirement Runway Calculator
+          Retirement Calculator
         </h1>
         <p className="text-gray-600">
           Plan your retirement with dynamic investment buckets and one-time
@@ -216,6 +266,17 @@ const RetirementCalculator = () => {
                   type="number"
                   value={currentAge}
                   onChange={(e) => setCurrentAge(Number(e.target.value))}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Retirement Age
+                </label>
+                <input
+                  type="number"
+                  value={retirementAge}
+                  onChange={(e) => setRetirementAge(Number(e.target.value))}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
               </div>
@@ -249,7 +310,7 @@ const RetirementCalculator = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Expected {expenseType === "monthly" ? "Monthly" : "Yearly"}{" "}
-                  Expenses (₹)
+                  Expenses ({formatCurrency(monthlyExpenses)})
                 </label>
                 <input
                   type="number"
@@ -265,7 +326,7 @@ const RetirementCalculator = () => {
           <div className="bg-green-50 p-6 rounded-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-green-800">
-                Investment Buckets
+                Existing Investment Buckets
               </h2>
               <button
                 onClick={addInvestmentBucket}
@@ -340,6 +401,92 @@ const RetirementCalculator = () => {
                       onClick={() => removeInvestmentBucket(bucket.id)}
                       className="w-full p-2 text-red-600 hover:bg-red-50 rounded"
                       disabled={investmentBuckets.length === 1}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Monthly Savings Buckets */}
+          <div className="bg-indigo-50 p-6 rounded-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-indigo-800">
+                Monthly Savings Buckets
+              </h2>
+              <button
+                onClick={addMonthlySavingsBucket}
+                className="flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
+              >
+                <Plus size={16} />
+                Add Bucket
+              </button>
+            </div>
+            {monthlySavingsBuckets.map((bucket) => (
+              <div
+                key={bucket.id}
+                className="mb-4 p-4 bg-white rounded-md border"
+              >
+                <div className="grid grid-cols-12 gap-3 items-center">
+                  <div className="col-span-4">
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Bucket Name
+                    </label>
+                    <input
+                      type="text"
+                      value={bucket.name}
+                      onChange={(e) =>
+                        updateMonthlySavingsBucket(
+                          bucket.id,
+                          "name",
+                          e.target.value
+                        )
+                      }
+                      className="w-full p-2 text-sm border border-gray-300 rounded"
+                      placeholder="e.g., SIP, Recurring Deposit, etc."
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Monthly Amount : {formatCurrency(bucket.amount)}
+                    </label>
+                    <input
+                      type="number"
+                      value={bucket.amount}
+                      onChange={(e) =>
+                        updateMonthlySavingsBucket(
+                          bucket.id,
+                          "amount",
+                          Number(e.target.value)
+                        )
+                      }
+                      className="w-full p-2 text-sm border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Expected Return (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={bucket.return}
+                      onChange={(e) =>
+                        updateMonthlySavingsBucket(
+                          bucket.id,
+                          "return",
+                          Number(e.target.value)
+                        )
+                      }
+                      className="w-full p-2 text-sm border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      onClick={() => removeMonthlySavingsBucket(bucket.id)}
+                      className="w-full p-2 text-red-600 hover:bg-red-50 rounded"
                     >
                       <Trash2 size={16} />
                     </button>

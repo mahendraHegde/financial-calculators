@@ -1,9 +1,16 @@
 export type RetirementCalculatorConfig = {
   currentAge: number;
+  retirementAge: number;
   inflation: number;
   monthlyExpenses: number;
   expenseType: "monthly" | "yearly";
   investmentBuckets: {
+    id: number;
+    name: string;
+    amount: number;
+    return: number;
+  }[];
+  monthlySavingsBuckets: {
     id: number;
     name: string;
     amount: number;
@@ -17,6 +24,7 @@ export type RetirementCalculatorConfig = {
     inflationRate: number;
   }[];
   nextBucketId: number;
+  nextSavingsBucketId: number;
   nextExpenseId: number;
 };
 
@@ -24,6 +32,7 @@ const STORAGE_KEY = "retirement_calculator_config";
 
 const defaultConfig: RetirementCalculatorConfig = {
   currentAge: 30,
+  retirementAge: 60,
   inflation: 6,
   monthlyExpenses: 50000,
   expenseType: "monthly",
@@ -32,6 +41,7 @@ const defaultConfig: RetirementCalculatorConfig = {
     { id: 2, name: "Medium Term (Debt Funds)", amount: 2000000, return: 10 },
     { id: 3, name: "Long Term (Equity)", amount: 3000000, return: 12 },
   ],
+  monthlySavingsBuckets: [],
   oneTimeExpenses: [
     {
       id: 1,
@@ -49,6 +59,7 @@ const defaultConfig: RetirementCalculatorConfig = {
     },
   ],
   nextBucketId: 4,
+  nextSavingsBucketId: 1,
   nextExpenseId: 3,
 };
 

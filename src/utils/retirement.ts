@@ -1,30 +1,65 @@
 import type {
   FutureOneTimeExpense,
-  YearlyProjection,
-  RetirementCalculationsResult,
   RetirementCalculationParams,
+  RetirementCalculationsResult,
+  YearlyProjection,
 } from "../types/retirement";
 
 export function calculateRetirement({
   currentAge,
+  retirementAge,
   inflation,
   monthlyExpenses,
   expenseType,
   investmentBuckets,
+  monthlySavingsBuckets,
   oneTimeExpenses,
 }: RetirementCalculationParams): RetirementCalculationsResult {
-  const totalCorpus = investmentBuckets.reduce(
-    (sum, bucket) => sum + bucket.amount,
-    0
-  );
+  // Calculate future value of all monthly savings buckets at retirement age
+  const yearsToInvest = Math.max(0, retirementAge - currentAge);
+  const monthsToInvest = yearsToInvest * 12;
+  const monthlySavingsFV = monthlySavingsBuckets.reduce((sum, bucket) => {
+    // FV = P * [((1 + r)^n - 1) / r]
+    // r = monthly rate, n = months
+    const r = bucket.return / 100 / 12;
+    const n = monthsToInvest;
+    const fv =
+      r > 0
+        ? bucket.amount * ((Math.pow(1 + r, n) - 1) / r)
+        : bucket.amount * n;
+    return sum + fv;
+  }, 0);
+
+  const totalCorpus =
+    investmentBuckets.reduce((sum, bucket) => sum + bucket.amount, 0) +
+    monthlySavingsFV;
 
   // Calculate weighted average return
+  // Weighted return: combine investment buckets and monthly savings FV
   const weightedReturn =
     totalCorpus > 0
-      ? investmentBuckets.reduce(
+      ? (investmentBuckets.reduce(
           (sum, bucket) => sum + bucket.amount * bucket.return,
           0
-        ) / totalCorpus
+        ) +
+          (monthlySavingsFV > 0
+            ? monthlySavingsBuckets.reduce(
+                (sum, bucket) =>
+                  sum +
+                  // Weight by FV contribution
+                  bucket.return *
+                    // FV for this bucket
+                    (() => {
+                      const r = bucket.return / 100 / 12;
+                      const n = monthsToInvest;
+                      return r > 0
+                        ? bucket.amount * ((Math.pow(1 + r, n) - 1) / r)
+                        : bucket.amount * n;
+                    })(),
+                0
+              )
+            : 0)) /
+        totalCorpus
       : 0;
 
   // Convert expenses to annual if monthly

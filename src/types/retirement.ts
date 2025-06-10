@@ -40,9 +40,11 @@ export interface RetirementCalculationsResult {
 
 export interface RetirementCalculationParams {
   currentAge: number;
+  retirementAge: number;
   inflation: number;
   monthlyExpenses: number;
-  expenseType: 'monthly' | 'yearly';
+  expenseType: "monthly" | "yearly";
   investmentBuckets: InvestmentBucket[];
+  monthlySavingsBuckets: InvestmentBucket[];
   oneTimeExpenses: OneTimeExpense[];
 }
